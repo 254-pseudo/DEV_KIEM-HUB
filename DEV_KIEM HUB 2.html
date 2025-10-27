@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brian — Hacker Console Portfolio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#000;--neon:#00ff00;--muted:#8cff8c;--panel:rgba(0,255,0,0.04)}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:'Share Tech Mono',monospace;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:18px;overflow-x:hidden}
+
+    /* full-screen preloader overlay */
+    #preloader{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column}
+    #preCanvas{width:420px;height:320px;display:block}
+    #preText{color:var(--neon);font-family:Orbitron;margin-top:16px}
+    .pre-controls{margin-top:10px;color:var(--muted);font-size:13px}
+    .toggle-sound{background:transparent;border:1px solid rgba(0,255,0,0.08);color:var(--neon);padding:6px 8px;border-radius:6px;cursor:pointer}
+
+    /* Matrix background canvas behind content */
+    #matrixCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.14}
+
+    .container{position:relative;z-index:2;width:100%;max-width:1024px}
+
+    /* Terminal header */
+    .terminal-header{font-family:'Share Tech Mono';color:var(--neon);font-size:14px;padding:8px 12px;border-radius:8px;border:1px solid rgba(0,255,0,0.08);background:linear-gradient(180deg,rgba(0,0,0,0.6),rgba(0,0,0,0.45));box-shadow:0 6px 30px rgba(0,0,0,0.7);display:flex;gap:12px;align-items:center}
+    .prompt{opacity:0.95}
+    .typed{font-family:'Orbitron',sans-serif;color:var(--neon);font-weight:700}
+
+    header{display:flex;align-items:center;gap:16px;padding:18px 0}
+    .logo{width:88px;height:88px;border-radius:10px;background:linear-gradient(180deg,rgba(0,255,0,0.06),rgba(0,255,0,0.02));display:flex;align-items:center;justify-content:center;font-family:'Orbitron';color:var(--neon);font-size:28px;box-shadow:0 0 18px rgba(0,255,0,0.08)}
+
+    main{margin-top:14px;background:linear-gradient(180deg,rgba(0,0,0,0.55),rgba(0,0,0,0.6));border:1px solid rgba(0,255,0,0.06);border-radius:10px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,0.7)}
+
+    .console{background:rgba(0,0,0,0.33);border:1px solid var(--panel);padding:12px;border-radius:8px;margin-bottom:14px}
+    .console .title{font-family:'Orbitron';color:var(--neon);font-size:13px;margin-bottom:8px}
+    .console p{color:var(--muted);line-height:1.6;margin:0}
+
+    .projects{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    .project{background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(0,0,0,0.4));border:1px solid var(--panel);padding:12px;border-radius:8px;transition:transform .15s ease,box-shadow .15s ease}
+    .project:hover{transform:translateY(-6px);box-shadow:0 12px 30px rgba(0,255,0,0.06)}
+    .project h3{margin:0 0 6px 0;font-family:'Orbitron';color:var(--neon);font-size:15px}
+    .project p{margin:0;color:var(--muted);font-size:13px}
+
+    .skills{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+    .skill{width:92px;height:92px;border-radius:8px;background:rgba(0,0,0,0.28);display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--panel);opacity:0;transform:translateY(6px)}
+    .skill img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(0,255,0,0.14))}
+    .skill span{margin-top:6px;font-size:12px;color:var(--muted)}
+
+    /* profile placeholder */
+    .profile-box{display:flex;gap:12px;align-items:center}
+    .avatar-placeholder{width:120px;height:120px;border-radius:8px;border:2px dashed rgba(0,255,0,0.12);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+    .profile-meta{flex:1}
+    .upload-btn{background:transparent;border:1px solid var(--panel);padding:8px;border-radius:6px;color:var(--neon);cursor:pointer}
+
+    form{display:flex;flex-direction:column;gap:10px}
+    label{font-size:13px;color:var(--neon)}
+    input,textarea{background:rgba(0,0,0,0.45);border:1px solid rgba(0,255,0,0.08);padding:10px;border-radius:6px;color:var(--muted);font-family:'Share Tech Mono'}
+    input:focus,textarea:focus{outline:none;box-shadow:0 0 10px rgba(0,255,0,0.12)}
+    .send{background:transparent;border:1px solid rgba(0,255,0,0.12);padding:10px;border-radius:6px;color:var(--neon);font-family:'Orbitron';cursor:pointer}
+
+    footer{text-align:center;color:rgba(0,255,0,0.6);margin-top:12px;font-size:13px}
+
+    .scanline{position:fixed;inset:0;pointer-events:none;z-index:1;background-image:linear-gradient(transparent 96%, rgba(0,255,0,0.02) 97%)}
+
+    @media(max-width:720px){.logo{width:72px;height:72px;font-size:22px}.skill{width:76px;height:76px}}
+  </style>
+</head>
+<body>
+  <!-- Preloader -->
+  <div id="preloader" aria-hidden="false">
+    <canvas id="preCanvas" width="420" height="320"></canvas>
+    <div id="preText">[LOADING] Initializing system...</div>
+    <div class="pre-controls">
+      <button id="soundToggle" class="toggle-sound">Sound: ON</button>
+    </div>
+  </div>
+
+  <canvas id="matrixCanvas"></canvas>
+  <div class="scanline"></div>
+
+  <div class="container" style="display:none" id="mainApp">
+    <div class="terminal-header">
+      <div class="prompt">root@briannetfly:~$</div>
+      <div class="typed" id="typedHeader"></div>
+    </div>
+
+    <header>
+      <div class="logo">BK</div>
+      <div>
+        <h1 id="role" style="margin:0;font-family:Orbitron;color:var(--neon);font-size:20px">WEB DEVELOPER</h1>
+        <div style="font-family:Share Tech Mono;font-size:12px;color:var(--muted)">br1an@terminal — portfolio console</div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Boot log console -->
+      <div class="console">
+        <div class="title">SYSTEM BOOT</div>
+        <div class="boot-log" id="bootLog" aria-live="polite" style="height:110px;overflow:auto"></div>
+      </div>
+
+      <!-- Profile (under boot log) -->
+      <section class="console">
+        <div class="title"></div>
+        <div class="profile-box">
+          <div class="profile-meta">
+            <div style="color:var(--neon);font-family:Orbitron;font-size:14px">[PROFILE VERIFIED: Brian Kimathi]</div>
+            <div style="margin-top:8px;color:var(--muted);font-size:13px">Role: <strong id="roleMeta">Web Developer & Ethical Hacker</strong></div>
+            <div style="margin-top:10px"><button class="upload-btn" id="uploadBtn"></button><input id="brian.jpd" type="file" accept="brian.jpg" style="display:none"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="console about">
+        <div class="title">[about]</div>
+        <p>Hello — I'm <strong>Brian Kimathi</strong>. I build modern web apps and perform ethical security assessments. I code clean UI/UX and hunt bugs before they become problems. I follow legal, responsible testing practices and always work with written permission.</p>
+     <P>My client satisfaction is my peace</P>
+     <p>I hold a degree in IT and cybersecurity gained in Mount Kenya University Thika Main campus</p>
+    </section>
+
+      <!-- Projects -->
+      <section class="console">
+        <div class="title">[projects]</div>
+        <div class="projects">
+          <a class="project" href="#" aria-label="Real-time Chat App">
+            <h3>Real-time Chat App</h3>
+            <p>Node.js + Socket.io — realtime messaging and rooms. <small>(replace with link)</small></p>
+          </a>
+
+          <a class="project" href="#" aria-label="Portfolio CMS">
+            <h3>Portfolio CMS</h3>
+            <p>React + MongoDB — headless CMS to manage projects. <small>(replace with link)</small></p>
+          </a>
+
+          <a class="project" href="#" aria-label="Security Scanner">
+            <h3>Security Scanner</h3>
+            <p>Basic vulnerability scanner for development testing. <small><https://www.google.com/aclk?sa=L&pf=1&ai=DChsSEwia_f3e2cOQAxXJloMHHVKQHbcYACICCAEQAxoCZWY&co=1&ase=2&gclid=CjwKCAjwjffHBhBuEiwAKMb8pBTYxWSY2HJsGZmn8PrkS9ZPMdgTcIpkMBMIAKkcOtBnq06VRGZRfBoCD28QAvD_BwE&cid=CAASlwHkaPx8jBgF3by6E-_2jP8uMREgsWX7JtZGS6ZiUeP2B1Dn9kV9DcaMeUbwAqjkF1pmdl9Uhqh6RgWkUsjkD7us_QndjRHIPl5Jsqn629dwmyAYsj6veTs2Zz5PX10RVYe7BGg_OMKsu_uiJW-S8asoVvmWzrmUKxazaRhI6rpLniMMG8lR6tR-vsQXpcIHCZChXI-13G9Z&cce=2&category=acrcp_v1_32&sig=AOD64_1B0gCslNz3ADbd478JrZhT-vAZnw&q&nis=4&adurl=https://www.manageengine.com/vulnerability-management/integrated-vulnerability-and-patch-management.html?network%3Dg%26device%3Dc%26keyword%3Ddatabase%2520vulnerability%2520management%26campaignid%3D22640946381%26creative%3D756765683915%26matchtype%3Dp%26adposition%3D%26placement%3D%26adgroup%3D179010501245%26targetid%3Dkwd-882645710143%26location%3D9070332%26target%3D%26gad_source%3D1%26gad_campaignid%3D22640946381%26gbraid%3D0AAAAAChA1Uia1qReMWPR4oROUhA2CocPe%26gclid%3DCjwKCAjwjffHBhBuEiwAKMb8pBTYxWSY2HJsGZmn8PrkS9ZPMdgTcIpkMBMIAKkcOtBnq06VRGZRfBoCD28QAvD_BwE&ved=2ahUKEwiplPne2cOQAxXe2gIHHQw7OIoQ0Qx6BAgUEAE/small></p>
+          </a>
+        </div>
+      </section>
+
+      <!-- Skills -->
+      <section class="console">
+        <div class="title">[skills]</div>
+        <div class="skills" id="skills">
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML5"><span>HTML5</span></div>
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS3"><span>CSS3</span></div>
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JS"><span>JS</span></div>
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" alt="React"><span>React</span></div>
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" alt="Node"><span>Node.js</span></div>
+          <div class="skill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg" alt="Mongo"><span>MongoDB</span></div>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section class="console">
+        <div class="title">[contact]</div>
+        <form id="contactForm" action="https://formspree.io/briankimathi125@gmail.com" method="POST">
+          <input type="hidden" name="_subject" value="New contact from portfolio">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" placeholder="Your name" required>
+
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@example.com" required>
+
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="5" placeholder="How can I help?" required></textarea>
+
+          <button class="send" type="submit">Send Message</button>
+        </form>
+      </section>
+
+    </main>
+
+    <footer>© 2025 Brian Kimathi | Access Granted</footer>
+  </div>
+
+  <script>
+    // Preloader matrix-style spinning glyphs in circular motion
+    const preloader = document.getElementById('preloader');
+    const preCanvas = document.getElementById('preCanvas');
+    const pctx = preCanvas.getContext('2d');
+    const cw = preCanvas.width; const ch = preCanvas.height;
+
+    const glyphs = '01@#$%&*<>?/[]{}()ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const orbitCount = 18;
+    const orbits = [];
+    for(let i=0;i<orbitCount;i++){
+      const r = 40 + i*6;
+      const speed = 0.01 + (i%5)*0.002;
+      const angle = Math.random()*Math.PI*2;
+      orbits.push({r,angle,speed,chars:[]});
+      const charsCount = 8 + (i%6);
+      for(let j=0;j<charsCount;j++) orbits[i].chars.push(glyphs[Math.floor(Math.random()*glyphs.length)]);
+    }
+
+    function drawPre(){
+      pctx.clearRect(0,0,cw,ch);
+      pctx.fillStyle = 'rgba(0,0,0,0)';
+      pctx.fillRect(0,0,cw,ch);
+      pctx.save();
+      pctx.translate(cw/2,ch/2);
+      for(let i=0;i<orbits.length;i++){
+        const o = orbits[i];
+        o.angle += o.speed;
+        for(let k=0;k<o.chars.length;k++){
+          const a = o.angle + (k*(Math.PI*2/o.chars.length));
+          const x = Math.cos(a)*o.r;
+          const y = Math.sin(a)*o.r*0.6;
+          pctx.fillStyle = 'rgba(0,255,0,' + (0.6 - (i*0.02)) + ')';
+          pctx.font = (12 - (i*0.15)) + 'px monospace';
+          pctx.fillText(o.chars[k], x, y);
+        }
+      }
+      pctx.restore();
+    }
+
+    let preAnim;
+    function startPre(){ preAnim = setInterval(drawPre, 40); }
+    function stopPre(){ clearInterval(preAnim); }
+
+    // sound toggle using WebAudio (beep sequence)
+    let audioCtx; let soundOn = true;
+    document.getElementById('soundToggle').addEventListener('click', ()=>{
+      soundOn = !soundOn;
+      document.getElementById('soundToggle').textContent = 'Sound: ' + (soundOn? 'ON' : 'OFF');
+      if(soundOn && !audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    });
+
+    function beep(time, freq, dur){
+      if(!soundOn) return;
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.05, audioCtx.currentTime + 0.01);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(audioCtx.currentTime + time);
+      o.stop(audioCtx.currentTime + time + dur);
+    }
+
+    // run preloader every time; after 3.2s fade to main app and start boot log
+    startPre();
+    // play soft beeps in rhythm
+    const beepInterval = setInterval(()=>{ beep(0, 600, 0.08); }, 400);
+
+    setTimeout(()=>{
+      // stop preloader
+      stopPre(); clearInterval(beepInterval);
+      // fade out preloader
+      preloader.style.transition = 'opacity 600ms ease'; preloader.style.opacity = 0;
+      setTimeout(()=>{ preloader.style.display = 'none'; document.getElementById('mainApp').style.display = 'block'; startMatrix(); playHeaderTyping(); playBootLog(); revealSkills(); }, 650);
+    }, 3200);
+
+    // Matrix background (classic green)
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth; let h = canvas.height = window.innerHeight;
+    const fontSize = 14; const columns = Math.floor(w / fontSize) + 1; const drops = Array(columns).fill(0);
+    const letters = 'abcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:\",.<>/?';
+    function matrix(){ ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fillRect(0,0,w,h); ctx.fillStyle='#00ff00'; ctx.font = fontSize+'px monospace'; for(let i=0;i<drops.length;i++){ const text = letters.charAt(Math.floor(Math.random()*letters.length)); const x=i*fontSize; ctx.fillText(text,x,drops[i]*fontSize); if(drops[i]*fontSize>h && Math.random()>0.975) drops[i]=0; drops[i]++; } }
+    let matrixInterval;
+    function startMatrix(){ matrixInterval = setInterval(matrix,50); }
+
+    window.addEventListener('resize', ()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; });
+
+    // Header typing
+    const typedHeader = document.getElementById('typedHeader'); const headerTxt = './launch_portfolio.sh'; let thIdx = 0;
+    function playHeaderTyping(){ (function typeHeader(){ if(thIdx < headerTxt.length){ typedHeader.textContent += headerTxt[thIdx++]; setTimeout(typeHeader, 40); } })(); }
+
+    // Boot log
+    const bootLog = document.getElementById('bootLog'); const bootLines = ['[BOOT] Initializing portfolio system...','[OK] Loading web developer module...','[OK] Loading ethical hacker protocols...','[OK] Loading projects database...','[OK] Setting up skills manifest...','[ACCESS GRANTED] Welcome, Brian Kimathi.'];
+    function playBootLog(){ bootLog.textContent=''; let i=0; const iv = setInterval(()=>{ if(i < bootLines.length){ bootLog.textContent += bootLines[i++] + '\n'; bootLog.scrollTop = bootLog.scrollHeight; } else clearInterval(iv); }, 420); }
+
+    // profile upload preview
+    const photoInput = document.getElementById('photoInput'); const uploadBtn = document.getElementById('uploadBtn'); const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+    uploadBtn.addEventListener('click', ()=> photoInput.click());
+    photoInput.addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return; const reader = new FileReader(); reader.onload = function(ev){ avatarPlaceholder.style.backgroundImage = `url(${ev.target.result})`; avatarPlaceholder.style.backgroundSize='cover'; avatarPlaceholder.textContent=''; }; reader.readAsDataURL(f);
+    });
+
+    // skills reveal
+    function revealSkills(){ const skills = document.querySelectorAll('.skill'); skills.forEach((s,i)=>{ setTimeout(()=>{ s.style.opacity=1; s.style.transform='translateY(0)'; }, 900 + i*300); }); }
+
+    // play boot log every time after preloader
+
+    // contact form quick confirmation
+    document.getElementById('contactForm').addEventListener('submit', e=>{ setTimeout(()=>{ alert('Message queued — check your inbox at briankimathi125@gmail.com.'); }, 300); });
+  </script>
+</body>
+</html>
